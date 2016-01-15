@@ -1,0 +1,759 @@
+\documentclass{beamer}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage{graphicx}
+
+% add frame numbers
+\beamertemplatenavigationsymbolsempty
+\setbeamertemplate{footline}[frame number]
+
+\title{Item Response Theory in R: Models}
+\author{Dr. Matthew Zeigenfuse}
+\institute{
+  Lehrstuhl f\"{u}r Psychologisches Methodenlehre, Evaluation und Statistik\\
+  Psychologisches Institut\\
+  Universit\"{a}t Z\"{u}rich%
+}
+\date{January 19, 2016}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\setkeys{Gin}{width=0.7\textwidth}
+
+<<preamble, echo=FALSE, results=hide>>=
+library(irtclass)
+plotICCSlides <- function(...) {
+    plotICC(..., baseSize = 16, iccWidth = 1.5, traitLab = "Ability",
+            probLab = "Probability Correct", breaksAtThresh = TRUE,
+            horizRef = TRUE, threshRef = TRUE, refWidth = 1)
+}
+@
+
+\frame{\titlepage}
+
+% --
+\begin{frame}
+  \begin{center}
+    {\bf {\Huge Part 1:}\\{\Large Preliminaries}}
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Item Types}
+
+  \begin{itemize}
+  \item \textbf{Dichtomous items}
+    %
+    \begin{itemize}
+    \item Each person's response is either correct or incorrect
+    \item Incorrect responses are labelled 0 and correct responses
+      are labelled 1
+    \item Any item type can be treated as a dichotomous item
+    \end{itemize}
+
+  \item \textbf{Items with partial credit} (ordered polytomous items)
+    %
+    \begin{itemize}
+    \item Each person's response is scored to one of $K$ response categories
+      labeled using the integers 0 to $K-1$ (shorthand: $0, \ldots, K-1$)
+    \item Responses with higher scores are more correct
+    \end{itemize}
+
+  \item \textbf{Multiple choice items} (nominal polytomous items)
+    %
+    \begin{itemize}
+    \item Have $K$ possible response categories labeled $0, \ldots, K-1$
+    \item Non-response is often included as one of the $K$ response categories
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Data Matrix}
+
+  \begin{itemize}
+  \item IRT models organize test takers' responses as a matrix
+  \item Each element of the matrix contains the response of a single
+    test taker to a single test item
+  \item Each \emph{row} of the matrix contains the responses of a single
+    \emph{test taker} to all of the test items
+  \item Each \emph{column} of the matrix contains the responses of all
+    test takers to a single \emph{test item}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Data Notation}
+
+  \begin{itemize}
+  \item $P$ is the number of test takers completing the test. The test
+    takers are labelled $1, \ldots, P$
+  \item $I$ is the number of items the test contains. The test items are
+    labelled $1, \ldots, I$
+  \item The possible responses for item $i$ are $0, \ldots, K_i-1$
+  \item $\bm{X}$ is the data matrix. It has $P$ rows and $I$ columns
+  \item $X_{pi}$ is the response of test taker $p$ to test item $i$. It
+    is an integer between 0 and $K_i-1$
+  \item $\bm{X}_{p \cdot}$ is row $p$, it contains the responses of
+    participant $p$
+  \end{itemize}
+\end{frame}
+
+
+% --
+\begin{frame}
+  \frametitle{Ability and Responding}
+
+  \begin{itemize}
+  \item IRT models relate a test taker's ability to his or her
+    pattern of responses
+  \item A test taker's ability is a single number $\theta_p$. It can be
+    positive or negative
+  \item Intuitively, test takers with higher ability tend to give higher
+    responses
+  \item This means test takers with high ability will correctly answer
+    dichtomous items more often than those with low ability
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Responses and Probability}
+
+  \begin{itemize}
+  \item IRT models consider each test taker's responses to the items to
+    be random
+  \item The probability a test taker gives a particular response is
+    determined by his or her ability
+  \item A probability is a number between 0 and 1
+  \item Responses with probabilities near 0 will rarely be offered and
+    responses with probabilities near 1 will often be offered
+  \item The probabilities of all available responses sum to one
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Response Probabilities}
+
+  \begin{itemize}
+  \item The probability that test taker $p$ offers response $k$ to item $i$
+    given that his or her ability is $\theta_p$ is denoted
+    %
+    \begin{equation*}
+    P(X_{pi} = k \mid \theta_p)
+    \end{equation*}
+
+  \item This will be shortened to $P(X_{pi} \mid \theta_p)$ for expressions that
+    do not depend on $k$
+
+  \item The relationship between $P(X_{pi} = k \mid \theta_p)$ and $\theta_p$
+    is determined by the particular IRT model
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Data Matrix Probability}
+
+  \begin{itemize}
+  \item The probability of a data matrix can be computed from the
+    $P(X_{pi} = 1 \mid \theta_p)$ by making two assumptions
+    %
+    \begin{enumerate}
+    \item The test takers respond do not dependent on one
+      another
+    \item A given test taker's responses to the items of
+    a test do not depend on one other
+    \end{enumerate}
+
+  \item Assumption 2 is known as local stochastic independence, or
+    simply local independence
+  \item Given these assumptions,
+    %
+    \begin{equation*}
+    P(\bm{X} \mid \bm{\theta}) =
+    \prod_{p=1}^P \prod_{i=1}^I P(X_{pi} \mid \theta_p)
+    \end{equation*}
+
+  \item $\bm{\theta}$ is a vector whose elements are
+    $\theta_1, \ldots, \theta_P$
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Dichotomous vs. Polytomous Items}
+
+  \begin{itemize}
+  \item Models for dichotomous items are the simplest IRT models
+  \item These models are the basis for IRT models of polytomous items
+  \item For this reason, we start with models for dichotomous items and
+    work up to models for polytomous items
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \begin{center}
+    {\bf {\Huge Part 2:}\\{\Large Models for Dichotomous Items}}
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Specifying Dichotomous IRT Models}
+
+  \begin{itemize}
+  \item Recall that the possible responses for a dichotomous item are 0 (incorrect)
+    and 1 (correct)
+  \item Since the sum of probabilities of these responses is one,
+    %
+    \begin{equation*}
+    P(X_{pi} = 0 \mid \theta_p) = 1 - P(X_{pi} = 1 \mid \theta_p)
+    \end{equation*}
+
+  \item Specifying $P(X_{pi} = 1 \mid \theta_p)$ as a function of $\theta_p$ defines
+    a dichotomous IRT model
+  \item This function is called the item response function and its graph is called
+    the item characteristic curve
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{The Rasch Model}
+
+  \begin{itemize}
+  \item The simplest IRT model is the Rasch model
+  \item Its item response function is
+    %
+    \begin{equation*}
+    P(X_{pi} = 1 \mid \theta_p) = \frac{1}{1 + e^{-(\theta_p - b_i)}}
+    \end{equation*}
+
+  \item The item parameter $b_i$ is known as the difficulty parameter
+  \item It defines the ability for which the probability of correctly and
+    incorrectly answering the item are both $1/2$
+  \item The probability of correctly answering the item is
+    %
+    \begin{itemize}
+    \item Greater than $1/2$ for abilities greater than $b_i$
+    \item Less than $1/2$ for abilities less than $b_i$
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Rasch Model ICC}
+
+  \begin{center}
+<<raschicc, echo=FALSE, fig=TRUE>>=
+breakLabs <- list(bquote(b[i] < 0),
+                  bquote(b[i] == 0),
+                  bquote(b[i] > 0))
+plotICCSlides(thresh = -1:1,
+              legendPosition = "none",
+              breakLabs = breakLabs)
+@
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Birnbaum's Two-Parameter Logistic (2PL) Model}
+
+  \begin{itemize}
+  \item Birnbuam's 2PL model augments the Rasch model with an
+    additional parameter $a_i$ controlling the slope of the ICC
+    at $\theta = b_i$
+  \item Its item response function is
+    %
+    \begin{equation*}
+      P(X_{pi} = 1 \mid \theta_p) = \frac{1}{1 + e^{-a_i(\theta_p - b_i)}}
+    \end{equation*}
+
+  \item The parameter $a_i > 0$ is called the difficulty
+    parameter
+  \item $a_i = 1$ corresponds to the Rasch model
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{2PL ICC, Same Difficulty}
+
+  \begin{center}
+<<twoplicc1, echo=FALSE, fig=TRUE>>=
+discrimLabs <- list(bquote(a[i] < 1),
+                    bquote(a[i] == 1),
+                    bquote(a[i] > 1))
+plotICCSlides(thresh = 0, discrim = c(0.5, 1, 2),
+              iccLabs = discrimLabs,
+              breakLabs = list(bquote(b[i])))
+@
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{2PL ICC, Different Difficulties}
+
+  \begin{center}
+<<twoplicc2, echo=FALSE, fig=TRUE>>=
+iccLabs <- list(bquote(a[i] == 2 ~~ and ~~ b[i] == 0),
+                bquote(a[i] == 1 ~~ and ~~ b[i] == 1))
+
+plotICCSlides(thresh = c(0,1), discrim = c(2, 1), iccLabs = iccLabs)
+@
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Guessing}
+
+  \begin{itemize}
+  \item For many item types, test takers could correctly answer the item simply
+    by guessing from the available responses
+  \item Birnbaum's three-parameter logistic (3PL) accounts for this behavior by
+    incorporating an additional parameter $g_i$ controlling the lower asymptote
+    of the item response function
+  \item The ICC is
+    %
+    \begin{equation*}
+      P(X_{pi} = 1 \mid \theta_p ) = g_i + \frac{1 - g_i}{1 + e^{-a_i(\theta_p - b_i)}}
+    \end{equation*}
+
+  \item $g_i$ (approximately) defines the probability that a test taker with
+    very low ability correctly responds to the item
+  \item $g_i = 0$ corresponds to the 2PL model
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{3PL ICC}
+
+  \begin{center}
+<<threeplicc, echo=FALSE, fig=TRUE>>=
+iccLabs <- list(bquote(g[i] == 0), bquote(g[i] == 0.25))
+plotICCSlides(thresh = 0, guess = c(0, 0.25),
+              iccLabs = iccLabs, breakLabs = list(bquote(b[i])))
+@
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Slipping}
+
+  \begin{itemize}
+  \item The 4PL model adds an additional parameter $u_i$ which determines
+    the upper asymptote of the item response function
+  \item This allows test takers with very high ability to ``slip'' and incorrectly
+    answer the item
+  \item The item response function for the 4PL is
+    %
+    \begin{equation*}
+      P(X_{pi} = 1 \mid \theta_p ) = g_i + \frac{u_i - g_i}{1 + e^{-a_i(\theta_p - b_i)}}
+    \end{equation*}
+
+  \item $u_i = 1$ corresponds to the 3PL
+  \item \verb;mirt; also provides another model, the 3PLu, with $g_i$ fixed to 0
+    equation with
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{4PL ICC}
+
+  \begin{center}
+<<fourplicc, echo=FALSE, fig=TRUE>>=
+iccLabs <- c("4PL", "3PLu")
+plotICCSlides(thresh = 0, guess = c(0.25, 0), upper = .8,
+              iccLabs = iccLabs, breakLabs = list(bquote(b[i])))
+@
+  \end{center}
+\end{frame}
+
+%% -------------------------------------------------------------------------------
+%% -------------------------------------------------------------------------------
+
+% --
+\begin{frame}
+  \begin{center}
+    {\bf {\Huge Part 3:}\\{\Large Models for Partial Credit}}
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Category Probability Functions}
+
+  \begin{itemize}
+  \item The polytomous analogue to the item response function is the category
+    probability function
+  \item These functions relate ability to the probability of scoring in response
+    category $k$
+  \item For an item with $K_i$ score categories, we need to specify $K_i-1$
+    category response functions $P(X_{pi} = k \mid \theta_p)$
+  \item Since probabilities sum to one, the function for category 0 is given by
+    %
+    \begin{equation*}
+      P(X_{pi} = 0 \mid \theta_p) = 1 - \sum_{k=1}^{K_i} P(X_{pi} = k \mid \theta_p)
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Partial Credit Model}
+
+  \begin{itemize}
+  \item In the 2PL,
+    %
+    \begin{equation*}
+    \log\left[
+      \frac{P(X_{pi} = 1 \mid \theta_p)}{P(X_{pi} = 0 \mid \theta_p)}
+    \right]
+    = \alpha_i(\theta_p - \beta_i)
+    \end{equation*}
+
+  \item The left-hand side is called the log-odds or logit
+  \item Master's (1982) partial credit model extends the Rasch model by
+    using it to model the logit between successive score categories, i.e.,
+    %
+    \begin{equation*}
+      \ln\left[
+        \frac{P(X_{pi} = k \mid \theta_p)}{P(X_{pi} = k-1 \mid \theta_p)}
+      \right] =
+      \theta_p - b_{i,k}
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{The Partial Credit Model}
+
+  \begin{itemize}
+  \item The logit specification can be used to derive the category probability function
+    %
+    \begin{equation*}
+      P(X_{pi} = k \mid \theta_p) \propto
+      \begin{cases}
+        1,& \text{when $k=0$}\\
+        e^{ k\theta_p - \sum_{m=1}^k b_{i,m} },& \text{otherwise}
+      \end{cases}
+    \end{equation*}
+
+  \item The proportionality constant is
+    %
+    \begin{equation*}
+      \left[ 1 + \sum_{n=1}^{K_i} e^{n\theta_p - \sum_{m=1}^n b_{i,m}} \right]^{-1}
+    \end{equation*}
+
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Category Thresholds}
+
+  \begin{itemize}
+  \item The $b_{i,k}$ are known as category thresholds
+  \item Each category threshold $b_{i,k}$ determines where the
+    category probability function for category $k$ crosses that of $k-1$
+  \item They must be ordered such that $b_{i,1} < \ldots < b_{i,K_i-1}$
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}{PCM Category Probabilities}
+  \begin{center}
+<<echo=FALSE,fig=TRUE,figs.only=TRUE>>=
+library(ggplot2)
+library(reshape2)
+
+a <- seq(-5, 5, 0.01)
+d <- c(-1.5, 1.5)
+
+rawPr <- cbind(1, exp(sweep(a %o% seq_along(d), 2, cumsum(d), "-")))
+pr <- sweep(rawPr, 1, rowSums(rawPr), "/")
+pr <- melt(pr, c("Trait", "Category"), value.name = "Probability")
+pr$Trait <- a[pr$Trait]
+pr$Category <- factor(pr$Category-1, seq(0, length(d)), labels = 0:2)
+
+brkLabs <- vector("list", length(d))
+for( j in seq_along(d) )
+  brkLabs[[j]] <- bquote(b[i][.(j)])
+
+ggplot(pr, aes(Trait, Probability, colour = Category)) +
+  geom_line(size = 1.25) +
+  geom_vline(xintercept = d, linetype = 2) +
+  scale_x_continuous("Ability", breaks = d, labels = brkLabs) +
+  theme_bw(base_size = 16) +
+  theme(legend.position = "top")
+@
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}{Generalized Partial Credit Model}
+  \begin{itemize}
+  \item Muraki's (1992) generalized partial credit model (GPCM) augments the
+    PCM with an discrimination parameter $a_i$, resulting in the model
+    %
+    \begin{equation*}
+      P(X_{pi} = k \mid \theta_p) \propto
+      \begin{cases}
+        1,& \text{when $k=0$}\\
+        e^{a_i(k \theta_p - \sum_{m=1}^k b_{i,m})},& \text{otherwise}
+      \end{cases}
+    \end{equation*}
+
+  \item The proportionality constant is
+    %
+    \begin{equation*}
+      \left[ 1 + \sum_{n=1}^{K_i} e^{a_i(n\theta_p - \sum_{m=1}^n b_{i,m})} \right]^{-1}
+    \end{equation*}
+
+  \item The discrimination parameter $a_i$ controls the slope of the category
+    probability function
+  \item $a_i$ corresponds to the PCM
+  \end{itemize}
+\end{frame}
+
+
+% --
+\begin{frame}{GPCM Category Probabilities ($a_i = 1/2$)}
+  \begin{center}
+<<echo=FALSE,fig=TRUE,figs.only=TRUE>>=
+library(ggplot2)
+library(reshape2)
+
+a <- seq(-5, 5, 0.01)
+d <- c(-1.5, 1.5)
+
+rawPr <- cbind(1, exp(0.5*sweep(a %o% seq_along(d), 2, cumsum(d), "-")))
+pr <- sweep(rawPr, 1, rowSums(rawPr), "/")
+pr <- melt(pr, c("Trait", "Category"), value.name = "Probability")
+pr$Trait <- a[pr$Trait]
+pr$Category <- factor(pr$Category-1, seq(0, length(d)), labels = 0:2)
+
+brkLabs <- vector("list", length(d))
+for( j in seq_along(d) )
+  brkLabs[[j]] <- bquote(b[i][.(j)])
+
+ggplot(pr, aes(Trait, Probability, colour = Category)) +
+  geom_line(size = 1.25) +
+  geom_vline(xintercept = d, linetype = 2) +
+  scale_x_continuous("Ability", breaks = d, labels = brkLabs) +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_bw(base_size = 16) +
+  theme(legend.position = "top")
+@
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}{GPCM Category Probabilities ($a_i = 2$)}
+  \begin{center}
+<<echo=FALSE,fig=TRUE,figs.only=TRUE>>=
+library(ggplot2)
+library(reshape2)
+
+a <- seq(-5, 5, 0.01)
+d <- c(-1.5, 1.5)
+
+rawPr <- cbind(1, exp(2*sweep(a %o% seq_along(d), 2, cumsum(d), "-")))
+pr <- sweep(rawPr, 1, rowSums(rawPr), "/")
+pr <- melt(pr, c("Trait", "Category"), value.name = "Probability")
+pr$Trait <- a[pr$Trait]
+pr$Category <- factor(pr$Category-1, seq(0, length(d)), labels = 0:2)
+
+brkLabs <- vector("list", length(d))
+for( j in seq_along(d) )
+  brkLabs[[j]] <- bquote(b[i][.(j)])
+
+ggplot(pr, aes(Trait, Probability, colour = Category)) +
+  geom_line(size = 1.25) +
+  geom_vline(xintercept = d, linetype = 2) +
+  scale_x_continuous("Ability", breaks = d, labels = brkLabs) +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_bw(base_size = 16) +
+  theme(legend.position = "top")
+@
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Samejima's Graded Response Model (1)}
+
+  \begin{itemize}
+  \item Samejima's (1969) graded response model does not extend the 2PL through the
+    logit
+  \item The probability of score $k$ is the difference between the probabilities of
+    scoring at least $k$ and at least $k+1$, i.e.,
+    %
+    \begin{equation*}
+      P(X_{pi} = k \mid \theta_p) = P(X_{pi} \geq k \mid \theta_p) - P(X_{pi} \geq k+1 \mid \theta_p)
+    \end{equation*}
+
+  \item In
+    %
+    \begin{equation*}
+      P( X_{pi} \geq 0 \mid \theta_p ) = 1
+    \end{equation*}
+    %
+    and
+    %
+    \begin{equation*}
+      P( X_{pi} \geq k \mid \theta_p ) = \frac{1}{1 + e^{-a_{i,k} \cdot (\theta_p - b_{i,k})}}
+    \end{equation*}
+    %
+    for every $k \geq 1$
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Samejima's Graded Response Model (2)}
+
+  \begin{itemize}
+  \item This specification can be used to derive the following category probability
+    functions
+    %
+    \begin{align*}
+      P(X_{pi} = 0 \mid \theta_p) &= \frac{1}{1 + e^{a_{i,1}\cdot (\theta_p - b_{i,1})}} \\
+      P(X_{pi} = k \mid \theta_p) &=
+      \frac{e^{a_{i,k}\cdot(\theta_p - b_{i,k})} - e^{a_{i,k+1}\cdot(\theta_p - b_{i,k+1})}}
+      {[1 + e^{a_{i,k}\cdot(\theta_p - b_{i,k})}][1 + e^{a_{i,k+1}\cdot(\theta_p - b_{i,k+1})}]} \\
+      P(X_{pi} = K_i-1 \mid \theta_p) &=
+      \frac{1}{1 + e^{-a_{i,K_i-1}\cdot(\theta_p - b_{i,K_i-1})}}
+    \end{align*}
+
+  \item The center equality hold for $1 \leq k \leq K_i - 2$
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Category Probability Curves}
+
+  \begin{center}
+<<echo=FALSE, fig=TRUE>>=
+library(reshape2)
+trait <- seq(-4, 4, .05)
+thresh <- -1:1
+prob <- lapply(
+  thresh, 
+  function(th) 
+    sapply(trait, calcIrtProb, thresh=th, discrim=1, guess=0, upper=1)
+)
+prob <- sapply(prob, function(x) x[2, ])
+prob <- cbind(1-prob[,1], prob[,1]-prob[,2], prob[,2]-prob[,3], prob[,3])
+pd <- melt(prob, c("Ability", "Category"))
+pd$Ability <- trait[pd$Ability]
+pd$Category <- factor(pd$Category, 1:3, labels=as.character(0:2))
+names(pd)[3] <- "Probability"
+ggplot(pd, aes(Ability, Probability)) +
+  geom_vline(xintercept = thresh, size = 1, linetype = 2) +
+  geom_line(aes(color = Category), size = 1.5) +
+  theme_bw(base_size = 16) + theme(legend.position = "top")
+@
+  \end{center}
+
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Graded Rating Scale Model}
+
+  \begin{itemize}
+  \item The \verb;mirt; package provides a simplification of the graded
+    response model using ``rating scale'' parameterization of the $b_{i,k}$
+  \item Andrich's (1978) rating scale model splits the threshold parameter
+    into the sum of an item-specific part $c_i$ and a category-specific
+    part $d_k$
+  \item This results in
+    %
+    \begin{equation*}
+      b_{i,k} = c_i + d_k
+    \end{equation*}
+
+  \item The category-specific part is shared among all items sharing the
+    same rating scale
+  \end{itemize}
+\end{frame}
+
+%% -------------------------------------------------------------------------------
+%% -------------------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bf {\Huge Part 4:}\\{\Large Models for Multiple Choice Items}}
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Extending to Multiple Choice Items}
+
+  \begin{itemize}
+  \item The 2PL can be extended to multiple choice items by
+    %
+    \begin{enumerate}
+    \item Selecting a single response category as a reference
+    \item Modeling the log-odds between the reference category and every other
+      response category
+    \end{enumerate}
+
+  \item If we select 0 to be the reference category,
+    %
+    \begin{equation*}
+    \log\left[
+      \frac{P(X_{pi} = k \mid \theta_p)}{P(X_{pi} = 0 \mid \theta_p)}
+    \right]
+    = \alpha_{i,k} \cdot (\theta_p - \beta_{i,k})
+    \end{equation*}
+
+  \item This indicates how much more likely the test taker is to select response
+    category $k$ versus the reference category
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}{Bock's Nominal Categories Model}
+  \begin{itemize}
+  \item We can use the fact that probabilities sum to one to derive a model that
+    looks very similar to the GPCM
+    %
+    \begin{equation*}
+      P(X_{pi} = k \mid \theta_p ) \propto
+      \begin{cases}
+        1,& \text{when $k=0$}\\
+        e^{\sum_{m=1}^k a_{i,m} \cdot (\theta_p - \beta_{i,m})},& \text{otherwise}
+      \end{cases}
+    \end{equation*}
+
+  \item The proportionality constant is
+    %
+    \begin{equation*}
+      \left[ 1 + \sum_{n=1}^{K_i} e^{\sum_{m=1}^n a_{i,m} \cdot (\theta_p - \beta_{i,m})} \right]^{-1}
+    \end{equation*}
+
+  \item This is Bock's (1972) nominal categories models
+  \end{itemize}
+\end{frame}
+
+\end{document}
+
+
+
+

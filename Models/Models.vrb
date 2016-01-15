@@ -1,0 +1,17 @@
+\frametitle{Graded Rating Scale Model}
+
+  \begin{itemize}
+  \item The \verb;mirt; package provides a simplification of the graded
+    response model using ``rating scale'' parameterization of the $b_{i,k}$
+  \item Andrich's (1978) rating scale model splits the threshold parameter
+    into the sum of an item-specific part $c_i$ and a category-specific
+    part $d_k$
+  \item This results in
+    %
+    \begin{equation*}
+      b_{i,k} = c_i + d_k
+    \end{equation*}
+
+  \item The category-specific part is shared among all items sharing the
+    same rating scale
+  \end{itemize}

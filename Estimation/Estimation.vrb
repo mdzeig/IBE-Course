@@ -1,0 +1,23 @@
+\frametitle{Summarizing and Visualizing Ability Estimates}
+
+  \begin{itemize}
+  \item Ability estimates can be plotted and summarized using standard methods
+    for vectors and matrices
+  \item Some useful summary functions are \verb;mean;, \verb;sd;, \verb;median;,
+    \verb;quantile; and \verb;summary;
+  \item For example, we can compute the 5th and 95th quantiles as follows
+\begin{Schunk}
+\begin{Sinput}
+> quantile(lsat6AbilWLE, c(.05, .95))
+\end{Sinput}
+\end{Schunk}
+  \item We visualize the distribution of the abilities using a histogram:
+\begin{Schunk}
+\begin{Sinput}
+> hist(lsat6AbilWLE, xlab = "Ability")
+\end{Sinput}
+\end{Schunk}
+
+  \item This is useful for checking for multimodality, which could like to poor
+    estimates
+  \end{itemize}

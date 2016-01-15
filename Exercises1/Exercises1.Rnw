@@ -1,0 +1,62 @@
+\documentclass{article}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+<<preamble, echo=FALSE, results=hide>>=
+library(mirt)
+library(TAM)
+data("data.timssAusTwn.scored")
+timssData <- data.timssAusTwn.scored[, 1:11]
+timssCovar <- data.timssAusTwn.scored[, -(1:11)]
+save(timssData, timssCovar, file = "TimssData.Rdata")
+@
+
+
+\begin{center}
+  {\Large\bf Exercises 1}
+\end{center}
+
+\begin{enumerate}
+\item Load the data in the file "TimssData.Rdata". This contains scored
+  responses from 1773 Australian and Taiwanese students to the mathematics
+  items of the TIMSS study. This data is publicly available in the
+  \verb;TAM; R package.
+<<ex1, echo=FALSE, results=hide>>=
+load("TimssData.Rdata")
+@
+
+\item The test responses are stored in the variable \verb;timssData;.
+  Fit this data using the PCM, GPCM and graded response models.
+<<fitmirt, echo=FALSE, results=hide>>=
+pcmFit <- mirt(timssData, 1, "Rasch")
+gpcmFit <- mirt(timssData, 1, "gpcm")
+grmFit <- mirt(timssData, 1, "graded")
+@
+
+
+\item Plot the category probability curves for item 4 for each model.
+  Comment on any differences.
+<<plotcpc, echo=FALSE, results=hide>>=
+itemplot(pcmFit, 4)
+itemplot(gpcmFit, 4)
+itemplot(grmFit, 4)
+@
+
+\item Use the item estimates to determine the hardest item.
+<<hardest, echo=FALSE, results=hide>>=
+coef(gpcmFit, IRTpar = TRUE) # M032692
+coef(grmFit, IRTpar = TRUE) # same
+@
+
+\item Estimate the abilities of the test takers using WLE and EAP
+  using the GPCM fits of the item parameters.
+<<scoring>>=
+abilEst <- fscores(gpcmFit, method = "WLE")
+abilEst <- fscores(gpcmFit, method = "EAP")
+@
+
+\end{enumerate}
+
+
+\end{document}
