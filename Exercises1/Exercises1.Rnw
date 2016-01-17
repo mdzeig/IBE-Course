@@ -9,6 +9,9 @@ library(TAM)
 data("data.timssAusTwn.scored")
 timssData <- data.timssAusTwn.scored[, 1:11]
 timssCovar <- data.timssAusTwn.scored[, -(1:11)]
+timssCovar$IDCNTRY <- factor(timssCovar$IDCNTRY, c(36, 158),
+                             c("Australia", "Taiwan"))
+names(timssCovar) <- c("country", "sex", "book")
 save(timssData, timssCovar, file = "TimssData.Rdata")
 @
 
@@ -36,7 +39,8 @@ grmFit <- mirt(timssData, 1, "graded")
 
 
 \item Plot the category probability curves for item 4 for each model.
-  Comment on any differences.
+  Comment on any differences. Do you think the PCM or GPCM provides
+  a better fit to the data? Wny?
 <<plotcpc, echo=FALSE, results=hide>>=
 itemplot(pcmFit, 4)
 itemplot(gpcmFit, 4)
@@ -50,10 +54,23 @@ coef(grmFit, IRTpar = TRUE) # same
 @
 
 \item Estimate the abilities of the test takers using WLE and EAP
-  using the GPCM fits of the item parameters.
-<<scoring>>=
-abilEst <- fscores(gpcmFit, method = "WLE")
-abilEst <- fscores(gpcmFit, method = "EAP")
+  using the GPCM fits of the item parameters. Graphical compare
+  the estimates using the \verb;plot; function.
+<<scoring, echo=FALSE, results=hide>>=
+abilEstWLE <- fscores(gpcmFit, method = "WLE")
+abilEstEAP <- fscores(gpcmFit, method = "EAP")
+plot(abilEstWLE, abilEstEAP, pch = 19, xlab = "WLE", ylab = "EAP")
+abline(0, 1, lty = 2)
+@
+
+\item Use the country information in \verb;timssCovar; to plot
+  histograms of the ability estimates. Do you think the histograms
+  look similar? What do you think this means?
+<<hist, echo=FALSE, results=hide>>=
+hist(abilEstEAP[timssCovar$country == "Australia"],
+     xlab = "Ability Estimate", main = "Australia")
+hist(abilEstEAP[timssCovar$country == "Taiwan"],
+     xlab = "Ability Estimate", main = "Taiwan")
 @
 
 \end{enumerate}
