@@ -1,40 +1,18 @@
-\documentclass{article}
+### R code from vignette source 'Exercises1.Rnw'
 
-\begin{document}
-\SweaveOpts{concordance=TRUE}
-
-<<preamble, echo=FALSE, results=hide>>=
 library(mirt)
-@
 
-\begin{center}
-  {\Large\bf IRT in R: Exercises 1}
-\end{center}
 
-\begin{enumerate}
-\item Load the data in the file "TimssData.Rdata". This contains scored
-  responses from 1773 Australian and Taiwanese students to the mathematics
-  items of the TIMSS study. This data is publicly available in the
-  \verb;TAM; R package.
-<<ex1, echo=FALSE, results=hide>>=
 # 1) Load the data using a load statement
 load("TimssData.Rdata")
-@
 
-\item The test responses are stored in the variable \verb;timssData;.
-  Fit this data using the PCM, GPCM and graded response models.
-<<fitmirt, echo=FALSE, results=hide>>=
+
 # 2) Fit the PCM, GPCM and graded response models
 pcmFit <- mirt(timssData, 1, "Rasch")
 gpcmFit <- mirt(timssData, 1, "gpcm")
 grmFit <- mirt(timssData, 1, "graded")
-@
 
 
-\item Plot the category probability curves for item 4 for each model.
-  Comment on any differences. Do you think the PCM or GPCM provides
-  a better fit to the data? Wny?
-<<plotcpc, echo=FALSE, results=hide>>=
 # 3) Plot the category probability curves. The curves for the GPCM and
 # graded response models look similar, but both have higher slopes than
 # the PCM model. This suggests that the GPCM model provides a better fit 
@@ -43,11 +21,8 @@ grmFit <- mirt(timssData, 1, "graded")
 itemplot(pcmFit, 4)
 itemplot(gpcmFit, 4)
 itemplot(grmFit, 4)
-@
 
-\item Compare the item parameter estimates between the PCM and GPCM.
-  Use these to explain the differences between the two curves.
-<<item4explan, echo=FALSE, results=hide>>=
+
 # 4) Compare the item parameter estimates. The following code prints
 # the estimates of the PCM and GPCM as rows in a matrix.  This makes
 # it easy to compare estimates. We see that the GPCM's discrimination
@@ -55,12 +30,8 @@ itemplot(grmFit, 4)
 # thresholds much closer to 0.
 rbind(coef(pcmFit, IRTpar = TRUE)[[4]],
       coef(gpcmFit, IRTpar = TRUE)[[4]])
-@
 
-\item Estimate the abilities of the test takers using WLE and EAP
-  using the GPCM fits of the item parameters. Graphically compare
-  the estimates using the \verb;plot; function.
-<<scoring, echo=FALSE, results=hide>>=
+
 # 5) Abilities can be estimates using the 'fscores' function. The
 # third line of creates a scatterplot of the WLE and EAP estimates
 # for the test takers. When the two methods estimate the same value
@@ -77,12 +48,8 @@ abilEstWLE <- fscores(gpcmFit, method = "WLE")
 abilEstEAP <- fscores(gpcmFit, method = "EAP")
 plot(abilEstWLE, abilEstEAP, pch = 19, xlab = "WLE", ylab = "EAP")
 abline(0, 1, lty = 2)
-@
 
-\item Use the country information in \verb;timssCovar; to plot
-  histograms of the EAP estimates of ability. Do you think the 
-  histograms look similar? What do you think this means?
-<<hist, echo=FALSE, results=hide>>=
+
 # 6) The histograms look very different, as there are no Taiwanese
 # students with ability estimates below 0. This suggests that the
 # MML assumption that the test takers come from the same normally
@@ -92,9 +59,5 @@ hist(abilEstEAP[timssCovar$country == "Australia"],
      xlab = "Ability Estimate", main = "Australia")
 hist(abilEstEAP[timssCovar$country == "Taiwan"],
      xlab = "Ability Estimate", main = "Taiwan")
-@
-
-\end{enumerate}
 
 
-\end{document}
