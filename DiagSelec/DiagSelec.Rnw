@@ -100,17 +100,25 @@ anova(fitRM, fit2PL)
   \frametitle{Test Fit}
 
   \begin{itemize}
-  \item In addition to comparative measures of model fit, the \verb;mirt;
-    package also provides the M2 and $\text{M2}^\star$ statistics for
-    assessing the fit of an IRT model (Maydeu-Olivares \& Joe, 2006)
-  \item These statistics deal with the sparsity problems that can arise
-    when computing $G^2$ statistics
-  \item The M2 statistic is appropriate for dichotomous data and the
-    $\text{M2}^\star$ is appropriate for polytomous data
-  \item The \verb;M2; function computes the appropriate statistic
-  \item It also computes the RMSEA (along with its $90\%$ confidence
-    interval), the SRMSR and the TLI and CFI (if \verb;calcNull = TRUE;,
-    as it is by default)
+  \item The \verb;mirt; package the provides the following global
+    fit measures through the \verb;M2; function
+    %
+    \begin{itemize}
+    \item The $M_2$ (dichotomous) and $M_2^\star$ (polytomous)
+      statistics and their associated hypothesis tests 
+      (Maydeu-Olivares \& Joe, 2006)
+    \item RMSEA and its $90\%$ confidence interval
+    \item SRMSR (if all items were ordinal)
+    \item TLI and CFI (if \verb;calcNull = TRUE;)
+    \end{itemize}
+  
+  
+  
+  \item The $M_2$ and $M_2^\star$ tests compare the hypothesis that
+    the \emph{test} data are consistent are consistent with the IRT
+    model ($H_0$) with the hypothesis that they are not ($H_a$)
+  \item It computes the probability of the observed test data under
+    the fitted IRT model (i.e., the $p$-value)
   \end{itemize}
 \end{frame}
 
@@ -131,18 +139,19 @@ M2(fitRM, calcNull=FALSE)
   \begin{itemize}
   \item \verb;mirt; can compute a number of item fit statistics
     via the \verb;itemfit; function
-
-  \item By default, this function will compute
     %
     \begin{itemize}
     \item $Z_h$ (Drasgow, Levine, \& Williams, 1985)
     \item Infit, outfit and their $Z$-scores (Rasch model only)
-    \item $S \mhyphen X^2$ (Orlando \& Thissen, 2000)
+    \item $S \mhyphen X^2$ (Orlando \& Thissen, 2000) and its 
+      associated test
+    \item $\chi^2$ (when \verb;X2 = TRUE;) and its associated test
     \end{itemize}
 
-  \item It will also compute the $\chi^2$ statistic when \verb;X2 = TRUE;
-  \item These statistics are used to assess the degree to which the IRT
-    model captures the observed patterns of responses for an item
+  \item These test compare the hypothesis that the data for a single
+    test item is consistent with the fitted IRT model ($H_0$) against 
+    the hypothesis that is not ($H_a$)
+  
   \item If ability estimates have already been computed, they can be
     provided to \verb;itemfit; via the \verb;Theta; argument
   \item Otherwise they will computed using \verb;fscores; with
@@ -188,7 +197,7 @@ itemfit(fitRM, X2=TRUE)
 
 <<>>=
 abilRM <- fscores(fitRM, method="WLE")
-head(personfit(fitRM, Theta=abilRM))
+head(personfit(fitRM))
 @
 
 \end{frame}

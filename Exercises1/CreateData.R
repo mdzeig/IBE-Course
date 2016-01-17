@@ -8,3 +8,5 @@ timssCovar$IDCNTRY <- factor(timssCovar$IDCNTRY, c(36, 158),
                              c("Australia", "Taiwan"))
 names(timssCovar) <- c("country", "sex", "book")
 save(timssData, timssCovar, file = "TimssData.Rdata")
+save(timssData, timssCovar, 
+     file = "../Exercises2/TimssData.Rdata")
