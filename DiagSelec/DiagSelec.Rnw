@@ -1,0 +1,434 @@
+\documentclass{beamer}
+
+\usepackage{amsmath,amssymb,bm}
+
+% add frame numbers
+\beamertemplatenavigationsymbolsempty
+\setbeamertemplate{footline}[frame number]
+
+%% define a short hyphen which is not a minus sign
+\mathchardef\mhyphen="2D
+
+\title{Item Response Theory in R:\\Model Selection and Diagnostics}
+\author{Dr. Matthew Zeigenfuse}
+\institute{
+  Lehrstuhl f\"{u}r Psychologisches Methodenlehre, Evaluation und Statistik\\
+  Psychologisches Institut\\
+  Universit\"{a}t Z\"{u}rich%
+}
+\date{January 19, 2016}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\setkeys{Gin}{width=0.7\textwidth}
+
+<<preamble, echo=FALSE, results=hide>>=
+library(mirt)
+options(width = 50)
+@
+
+\frame{\titlepage}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Model Selection}
+
+  \begin{itemize}
+  \item A common strategy in IRT modeling is to fit multiple nested models
+    of increasing complexity and select the one providing the best fit to
+    estimate abilities
+  \item An example of nested models is the Rasch and 2PL models (the
+    Rasch model is nested in the 2PL)
+  \item The \verb;mirt; package provides an \verb;anova; method for
+    this purpose
+  \item The function takes two fitted models resulting from calls to the
+    \verb;mirt; function
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{anova} Example}
+
+<<results=hide>>=
+X <- expand.table(LSAT6)
+fitRM <- mirt(X, 1, "Rasch")
+fit2PL <- mirt(X, 1, "2PL")
+@
+<<>>=
+anova(fitRM, fit2PL)
+@
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Information Criteria}
+
+  \begin{itemize}
+  \item The AIC, AICc, SABIC and BIC report the AIC and BIC and their
+    sample-size corrected counterparts
+  \item These criteria can be used to compare nested models
+  \item They balance fit against model complexity by penalizing overall
+    fit by a function of the number of parameters
+  \item The function differs by criterion
+  \item In all cases, the model with the lowest score provides the best
+    balance of fit against complexity
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Likelihood Ratio Test}
+
+  \begin{itemize}
+  \item In addition to computing information criteria, the \verb;anova;
+    function also performs a likelihood ratio test (LRT)
+  \item LRTs test the null hypothesis that the simpler
+    model is sufficient to account for the data
+  \item It does so by comparing the fit of the simpler model to that
+    of a more complex model in which the simpler model is nested
+  \item For example, an LRT involving the Rasch and 2PL models tests the
+    null hypothesis that the Rasch model is sufficient to account for
+    the observed test responses by comparing its fit to that of the 2PL
+  \item A low $p$-value suggests that the simpler model (e.g., Rasch) does
+    not provide a good account of the data
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Test Fit}
+
+  \begin{itemize}
+  \item The \verb;mirt; package the provides the following global
+    fit measures through the \verb;M2; function
+    %
+    \begin{itemize}
+    \item The $M_2$ (dichotomous) and $M_2^\star$ (polytomous)
+      statistics and their associated hypothesis tests 
+      (Maydeu-Olivares \& Joe, 2006)
+    \item RMSEA and its $90\%$ confidence interval
+    \item SRMSR (if all items were ordinal)
+    \item TLI and CFI (if \verb;calcNull = TRUE;)
+    \end{itemize}
+  
+  
+  
+  \item The $M_2$ and $M_2^\star$ tests compare the hypothesis that
+    the \emph{test} data are consistent are consistent with the IRT
+    model ($H_0$) with the hypothesis that they are not ($H_a$)
+  \item It computes the probability of the observed test data under
+    the fitted IRT model (i.e., the $p$-value)
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{M2} Example}
+
+<<>>=
+M2(fitRM)
+M2(fitRM, calcNull=FALSE)
+@
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Item Fit}
+
+  \begin{itemize}
+  \item \verb;mirt; can compute a number of item fit statistics
+    via the \verb;itemfit; function
+    %
+    \begin{itemize}
+    \item $Z_h$ (Drasgow, Levine, \& Williams, 1985)
+    \item Infit, outfit and their $Z$-scores (Rasch model only)
+    \item $S \mhyphen X^2$ (Orlando \& Thissen, 2000) and its 
+      associated test
+    \item $\chi^2$ (when \verb;X2 = TRUE;) and its associated test
+    \end{itemize}
+
+  \item These test compare the hypothesis that the data for a single
+    test item is consistent with the fitted IRT model ($H_0$) against 
+    the hypothesis that is not ($H_a$)
+  
+  \item If ability estimates have already been computed, they can be
+    provided to \verb;itemfit; via the \verb;Theta; argument
+  \item Otherwise they will computed using \verb;fscores; with
+    \verb;method = "EAP";
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{itemfit} Example 1}
+
+<<>>=
+itemfit(fitRM)
+@
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{itemfit} Example 1}
+
+<<>>=
+itemfit(fitRM, X2=TRUE)
+@
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Person Fit}
+
+  \begin{itemize}
+  \item \verb;mirt; will also compute the $Z_h$ and the infit and outfit
+    statistics (Rasch model only) using the \verb;personfit; function
+  \item If ability estimates have already been computed, they can be
+    provided to \verb;itemfit; via the \verb;Theta; argument
+  \item Otherwise they will computed using \verb;fscores; with
+    \verb;method = "EAP";
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{personfit} Example}
+
+<<>>=
+abilRM <- fscores(fitRM, method="WLE")
+head(personfit(fitRM))
+@
+
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Differential Item Functioning}
+
+  \begin{itemize}
+  \item Differential item function (DIF), or measurement bias, occurs
+    when people from different groups with the same ability have
+    different response probabilities for a test item
+  \item The presence of DIF items can result in biased ability 
+    estimates for the affected group, leading to unfair tests
+  \item DIF is typically subdivided into two types
+    %
+    \begin{itemize}
+    \item Uniform: The effect of DIF does not depend on ability level
+    \item Non-uniform: The effect of DIF depends on the ability of the
+      test taker
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{The Effect of DIF on Model Parameters}
+
+  \begin{itemize}
+  \item Suppose we are interested in checking for DIF across men
+    and women in a test
+  \item We fit separate IRT models for men and women
+  \item Dichotomous items
+    %
+    \begin{itemize}
+    \item Uniform DIF will result in different estimates of the
+      difficulty parameter for each of the two groups
+    \item Non-uniform DIF will result in different discrimination
+      parameter estimates
+    \end{itemize}
+  
+  \item Polytomous items
+    %
+    \begin{itemize}
+    \item Uniform DIF will result in different category threshold
+      estimates for each of the two groups
+    \item Non-uniform DIF will result in different discrimination
+      estimates
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Testing for DIF}
+  
+  \begin{itemize}
+  \item Testing for DIF using the \verb;mirt; package is a multi-step
+    process
+  \item The first step involves fitting an IRT model for each of the
+    groups using the \verb;multipleGroup; function
+  \item This function is a wrapper to \verb;mirt; which takes a
+    grouping parameter, a grouping variable and any invariances
+    across the groups
+  \item This is illustrated using the FIMS data set from the 
+    \verb;TAM; package
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Example: Fitting Multiple Groups}
+  
+<<results=hide>>=
+library(TAM)
+data("data.fims.Aus.Jpn.scored")
+fims <- data.fims.Aus.Jpn.scored
+X <- fims[, -c(1, 16)]
+country <- factor(fims[, 16], 1:2, 
+                  c("Australia", "Japan"))
+fit2Group <- multipleGroup(X, 1, group = country, 
+                           itemtype = "Rasch")
+@
+
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Global LRT}
+  
+  Does a model with two groups fit better than a single model?
+
+<<>>=
+fit1Group <- mirt(X, 1, itemtype = "Rasch", 
+                  verbose = FALSE)
+anova(fit1Group, fit2Group)
+@
+
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Testing Individual Items for DIF}
+  
+  \begin{itemize}
+  \item Individual items can be tested for DIF using the \verb;DIF;
+    function
+  \item At a minimum, this function must be supplied the result
+    from \verb;multipleGroup; (\verb;MGmodel;) and the parameter(s) 
+    to be tested (\verb;which.par;)
+  \item By default, \verb;DIF; computes a number of information
+    criteria and performs a LRT between a model where \verb;which.par;
+    for item $i$ is invariant across groups and a model where it is
+    not
+  \item By setting \verb;Wald = TRUE;, \verb;DIF; will instead 
+    perform Wald tests
+  \item It can also automatically produce ICC or category probability
+    plots for items exhibiting DIF by setting \verb;plotdif = TRUE;
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{DIF in FIMS (1)}
+  
+  To test for uniform DIF across countries in the FIMS data using
+  LRTs
+<<rundif, eval=FALSE>>=
+difres <- DIF(fit2Group, "d", plotdif = TRUE)
+@
+
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{DIF in FIMS (2)}
+
+  \begin{center}
+<<echo=FALSE, results=hide, fig=TRUE>>=
+<<rundif>>
+@
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{DIF in FIMS (3)}
+
+<<>>=
+difres$M1PTI1
+@
+
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Anchor Items}
+  
+  \begin{itemize}
+  \item Anchor items are typically used to equate the ability
+    distributions of the two groups when testing for DIF
+  \item These items are assumed not to contain DIF
+  \item Test takers of the same ability level will have the same
+    probability of answering an anchor item regardless of group
+  \item These items anchor the ability distributions, allowing
+    differences in item parameters to be distinguished from
+    group difference in ability
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Anchor Items in \texttt{mirt}}
+  
+  \begin{itemize}
+  \item We can set anchor items using the \verb;invariance;
+    argument to \verb;multipleGroup;
+  \item To do this, we should first provide a character vector
+    giving the item names that we would like to fix across groups
+  \item We should also free the mean and variance parameters to
+    vary across groups
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{FIMS with Anchors (1)}
+  
+  Fit the FIMS data with the first four items as anchors
+  
+<<d>>=
+itemnames <- names(X)
+fit2GroupAnchor <- 
+  multipleGroup(X, 1, group = country,
+                invariance = c(itemnames[1:4], 
+                               "free_means", 
+                               "free_var"),
+                itemtype = "Rasch", 
+                verbose = FALSE)
+@
+
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{FIMS with Anchors (2)}
+
+<<anchordif, eval=FALSE>>=
+difWithAnchor <- DIF(fit2GroupAnchor, "d",
+                     items2test = itemnames[-(1:4)],
+                     plotdif = TRUE)
+@
+
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{FIMS with Anchors (3)}
+
+  \begin{center}
+<<echo=FALSE, results=hide, fig=TRUE>>=
+<<anchordif>>
+@
+  \end{center}
+  
+\end{frame}
+
+\end{document}
+
+
+
+
+
+
+

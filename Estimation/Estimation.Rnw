@@ -1,0 +1,564 @@
+\documentclass{beamer}
+
+\usepackage{amsmath,amssymb,bm}
+
+% add frame numbers
+\beamertemplatenavigationsymbolsempty
+\setbeamertemplate{footline}[frame number]
+
+\title{Item Response Theory in R: Estimation}
+\author{Dr. Matthew Zeigenfuse}
+\institute{
+  Lehrstuhl f\"{u}r Psychologisches Methodenlehre, Evaluation und Statistik\\
+  Psychologisches Institut\\
+  Universit\"{a}t Z\"{u}rich%
+}
+\date{January 19, 2016}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\setkeys{Gin}{width=0.7\textwidth}
+
+<<preamble, echo=FALSE, results=hide>>=
+library(mirt)
+@
+
+\frame{\titlepage}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Overview}
+
+  \begin{itemize}
+  \item Estimating the ability and item parameters in \verb;mirt;
+    is a two-step process
+  \end{itemize}
+
+  \begin{description}
+  \item[Step 1] Estimate the item parameters using marginal
+    maximum likelihood (MML) estimation via the \verb;mirt; function
+  \item[Step 2] Estimate the ability parameters given the item
+    parameters using one of the available ability estimators with
+    the \verb;fscores; function
+  \end{description}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    {\bf {\Huge Step 1:}\\{\Large Item Parameter Estimation}}
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Ability in the Population}
+
+  \begin{itemize}
+  \item The \verb;mirt; package uses MML to estimate the item parameters
+    of an IRT
+  \item MML assumes that each test taker's ability is drawn from a
+    larger population whose distribution is known
+  \item The population distribution determines how many individuals
+    of a given ability there are in the population
+  \item For example, a population distribution might tell us that there
+    are two times as many test takers of ability zero in the
+    population than test takers of ability two
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Standard Normal Population Distribution}
+
+  \begin{itemize}
+  \item In practice, the population distribution of test taker ability is
+    assumed to be a standard normal distribution
+  \item A standard normal distribution is a normal distribution whose
+    mean is zero and whose standard deviation is one
+  \item This means that values close to zero occur more often in the
+    population than values far frome zero
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{The Marginal Likelihood}
+
+  \begin{itemize}
+  \item Assuming a population distribution allows us to compute the
+    probability of observing the data matrix $\bm{X}$ from a
+    population with the assumed distribution
+  \item This is called the marginal likelihood
+  \item Its expression for a standard normally
+    distributed population is
+    %
+    \begin{equation*}
+    P(\bm{X} \mid \bm{\psi}) \propto \prod_{p=1}^P
+    \int_{-\infty}^\infty \prod_{i=1}^I
+    P(\bm{X}_{p \cdot} \mid \tilde{\theta})
+    \cdot \exp\left( -\frac{\tilde\theta^2}{2} \right)
+    d\tilde{\theta}
+    \end{equation*}
+  \item $\bm{\psi}$ is a placeholder for the item parameters of
+    the IRT model
+  \item Intuitively, the marginal likelihood of $\bm{X}_{p \cdot}$ is
+    its average probability over the population
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \frametitle{Marginal Maximum Likelihood}
+
+  \begin{itemize}
+  \item MML finds the value $\hat{\bm\psi}$ of the item parameters that
+    maximizes the marginal likelihood
+  \item The standard error of the estimate is computed by inverting the
+    negative of the Hessian matrix evaluated at $\hat{\bm\psi}$
+  \item This value is a good guess when
+    %
+    \begin{itemize}
+    \item Our IRT model is a reasonable approximation of reality
+    \item The population distribution is approximately correct
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Computational Note}
+
+  \begin{itemize}
+  \item The integral in the marginal likelihood must be computed numerically
+  \item The \verb;mirt; package provides a number of methods for computing
+    this integral
+  \item The default method (\verb;"EM";) is Bock \& Aitkin's (1981) EM
+    algorithm
+  \item This method is sufficient when we are interested in estimating a
+    single ability for the test takers
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{MML in R}
+
+  \begin{itemize}
+  \item The \verb;mirt; function performs MML estimation in the \verb;mirt;
+    package
+  \item This function is very flexible, but at the very least you
+    should provide the following arguments
+    %
+    \begin{itemize}
+    \item \verb;data;: The test responses to which you would like to fit an
+      IRT model
+    \item \verb;model;: Will always be "1" for unidimensional IRT models
+    \item \verb;itemtype;: Character vector indicating the type (e.g., Rasch,
+      PCM) of each of the test items.
+    \end{itemize}
+  \item You can use the \verb;guess; argument to fix the value of the
+    pseudoguessing parameter in the 3PL
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{The \texttt{data} Argument}
+
+  \begin{itemize}
+  \item The \verb;data; argument contains the test responses
+  \item It is either a matrix or data.frame with the structure
+    described earlier:
+    %
+    \begin{itemize}
+    \item Each row contains all of the data for one test taker
+    \item Each column contains all of the data for one test item
+    \end{itemize}
+
+  \item Thus, \verb;nrow(data); is the number of test takers and
+    \verb;ncol(data); is the number of test items
+  \item Missing data should be coded as \verb;NA;
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{The \texttt{itemtype} Argument}
+
+  \begin{itemize}
+  \item The \verb;itemtype; argument specifies each test item's
+    type
+  \item The item types covered today are \verb;'Rasch';, \verb;'2PL';,
+    \verb;'3PL';, \verb;'graded';, \verb;'grsm';, \verb;'gpcm'; and
+    \verb;'nominal';
+  \item The PCM can be obtained by setting \verb;itemtype = 'Rasch';
+    with polytomous data
+  \item The \verb;itemtype; argument can be supplied in two ways
+    %
+    \begin{itemize}
+    \item Using a character vector of length \verb;ncol(data);
+      whose elements specify possible item types
+    \item Using a character vector of length 1 specifying an
+      item type to be recycled for all items
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Examples}
+
+  \begin{itemize}
+  \item Fit the Rasch model for the \verb;LSAT6; data set
+<<LSAT6ex, results=hide>>=
+lsat6Full <- expand.table(LSAT6)
+lsat6Rasch <- mirt(lsat6Full, 1, "Rasch")
+@
+
+  \item Fit the graded response model to the \verb;Science;
+    data set
+<<ScienceEx, results=hide>>=
+sciGraded <- mirt(Science, 1, "graded")
+@
+
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Computing Standard Errors}
+
+  \begin{itemize}
+  \item By default the \verb;mirt; function does not compute standard errors,
+    because it can be very time-consuming
+
+  \item To compute standard errors, set \verb;SE = TRUE;
+
+  \item For example,
+<<eval=FALSE>>=
+lsat6Rasch <- mirt(lsat6Full, 1,
+                   "2PL", SE = TRUE)
+@
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Extracting Item Parameter Estimates (1)}
+
+  \begin{itemize}
+  \item Item parameter estimates can be extracted from a
+    model fit using the \verb;coef; function
+  \item Return a list with \verb;ncol(data) + 1; in slope-intercept
+    form. The first \verb;ncol(data); elements contain the item parameter
+    estimates. The last element contains estimates of the normal
+    population parameters
+<<eval=FALSE>>=
+coef(lsat6Rasch)
+@
+
+  \item Return the estimates in standard form
+<<eval=FALSE>>=
+coef(lsat6Rasch, IRTpars = TRUE)
+@
+
+  \item When all items have the same type, you can simplify the
+    output by setting \verb;simplify = TRUE;
+  \item This returns a list with three elements
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Slope-Intercept Form}
+  
+  \begin{itemize}
+  \item By default, \verb;coef; returns parameter estimates in
+    slope-intercept form
+  \item This parameterization changes the value of the difficulty
+    parameter $b_i$
+  \item For example, the 2PL in slope-intercept form is
+    %
+    \begin{equation*}
+      P(X_{pi} = 1 \mid \theta_p) = \frac{1}{1 + e^{-(a_i \theta_p + d_i)}}
+    \end{equation*}
+  
+  \item This can be converted back to standard form by
+    %
+    \begin{equation*}
+      b_i = -d_i/a_i
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Simplifying \texttt{coef} Output}
+
+  \begin{itemize}
+  \item When all items have the same type, you can set
+    \verb;simplify = TRUE;, e.g.,
+<<>>=
+ests <- coef(lsat6Rasch, IRTpars = TRUE,
+             simplify = TRUE)
+ests$items
+@
+
+  \item The remaining list elements are \verb;means; and
+    \verb;cov; containing the mean and variance of the
+    ability population distribution
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Extracting Standard Errors}
+
+  \begin{itemize}
+  \item The \verb;coef; function can also be used to extract the
+    standard errors when they were computed
+  \item This can be done by setting \verb;printSE = TRUE;
+  \item For example,
+<<eval=FALSE>>=
+coef(lsat6Rasch, IRTpars = TRUE, printSE = FALSE)
+@
+  \item Note the \verb;printSE = TRUE; will be ignored if
+    \verb;simplify = TRUE;
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Visualizing Item Fits}
+
+  \begin{itemize}
+  \item We can visualize aspects of the fits for each item using the
+    \verb;itemplot; function
+  \item For unidimensional models, there are three primary arguments
+    %
+    \begin{itemize}
+    \item \verb;object;: An object returned by the \verb;mirt; function
+    \item \verb;item;: The item you would like to visualize
+    \item \verb;type;: The type of plot you would like to see
+      %
+      \begin{itemize}
+      \item \verb;type = 'trace'; plots the ICC or category probability
+        curves for the item
+      \item \verb;type = 'info'; plots the item information
+      \item \verb;type = 'infotrace'; plots both in a single window
+      \end{itemize}
+    \end{itemize}
+  \item For example,
+<<sciplot, eval=FALSE>>=
+itemplot(sciGraded, 2, "infotrace")
+@
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Example Output}
+
+  \begin{center}
+<<echo=FALSE, fig=TRUE>>=
+<<sciplot>>
+@
+  \end{center}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Fixing Guessing or Upper Asymptote Parameters}
+
+  \begin{itemize}
+  \item The \verb;mirt; function allows for fixed guessing and upper
+    asymptote parameters through its \verb;guess; and \verb;upper;
+    arguments
+  \item These parameters allow the user to use fixed, non-zero values for
+    these parameters in conjunction with the 2PL model
+  \item For example, the following fits the 3PL model with a fixed guessing
+    parameter of $0.1$ for all items
+    %
+<<eval=FALSE>>=
+fit3plFix <- mirt(X, 1, "2PL", guess=0.1)
+@
+
+  \item Different guessing (upper) parameters can be supplied to different
+    items by providing a vector of length \verb;ncol(X); to \verb;guess;
+    (\verb;upper;)
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Providing Item Blocks to GRSM}
+
+  \begin{itemize}
+  \item The GRSM uses common threshold spacings for all items sharing the
+    same rating scale
+  \item These items are specified using the \verb;grsm.block; argument
+  \item This argument whose length equals the number of columns of the
+    data matrix
+  \item Items that are not contained within a GRSM block should be given
+    the value \verb;NA;
+  \item Otherwise, blocks are labeled using integers: all items having
+    the same integer code belong to the same block
+  \item For example, setting \verb;grsm.block; to
+    \verb;c(rep(1,3), rep(2,3), NA); will create two blocks of three
+    items and neither block will contain the 7th item
+  \end{itemize}
+\end{frame}
+
+% --
+\begin{frame}
+  \begin{center}
+    {\bf {\Huge Step 2:}\\{\Large Ability Estimation}}
+  \end{center}
+\end{frame}
+
+% --
+\begin{frame}[fragile]
+  \frametitle{Methods for Person Parameter Estimation}
+
+  \begin{itemize}
+  \item The \verb;mirt; package provides a number of methods for
+    estimating the person parameter in the \verb;fscores; function
+    %
+    \begin{itemize}
+    \item Maximum likelihood (ML)
+    \item Maximum aposteriori (MAP)
+    \item Expected aposteriori (EAP), the default
+    \item Warm's (1989) weighted likelihood estimator (WLE)
+    \end{itemize}
+
+  \item By default, the \verb;fscores; function returns only the ability
+    estimates as a matrix with $P$ rows and 1 column
+
+  \item To return the standard errors, set \verb;full.scores.SE = TRUE;
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Maximum Likelihood Estimation}
+
+  \begin{itemize}
+  \item The ML estimate of the ability of test taker $p$ is
+    the value $\hat{\theta}_p$ maximizing the likelihood
+    %
+    \begin{equation*}
+      P(\bm{X}_{p \cdot} \mid \theta_p ) = \prod_{i=1}^I P(X_{pi} \mid \theta_p)
+    \end{equation*}
+    %
+    for the previously estimated value of the item parameters
+
+  \item Though simple, ML estimates have two problems:
+    %
+    \begin{itemize}
+    \item They are not defined for test takers who correctly answer all
+      items or incorrectly answer all items
+    \item They are relatively less accurate than the other estimators for
+      short tests
+    \end{itemize}
+
+  \item The following estimates the item parameters using ML for the LSAT6
+    data
+<<eval=FALSE>>=
+lsat6AbilML <- fscores(lsat6Rasch, method = "ML")
+@
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Bayesian Estimators (1)}
+
+  \begin{itemize}
+  \item MAP and EAP are Bayesian estimators, so they are based on
+    %
+    \begin{equation*}
+      P(\theta_p \mid \bm{X}_{p \cdot}) \propto P(\bm{X}_{p\cdot} \mid \theta_p) P(\theta_p)
+    \end{equation*}
+
+  \item The quantity $P(\theta_p)$ is known as the prior distribution and is
+    often taken to be the population distribution assumed in the previous section
+  \item The quantity $P(\theta_p \mid \bm{X}_{p \cdot})$ is known as the posterior
+    distribution
+  \item The MAP estimator returns the value $\hat{\theta}_p$ maximizing the posterior
+    distribution
+  \item The EAP estimator returns the expect value (or average) of the posterior
+    distribution
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Bayesian Estimators (2)}
+
+  \begin{itemize}
+  \item In practice, there should be little difference between the MAP and EAP for
+    long tests
+
+  \item For shorter tests, the EAP estimator will give more conservative estimates,
+    because it takes the skew of the posterior into account
+
+  \item The following estimates the item parameters using MAP for the LSAT6
+    data
+<<eval=FALSE>>=
+lsat6AbilMAP <- fscores(lsat6Rasch, method = "MAP")
+@
+
+  \item The following estimates the item parameters using EAP for the LSAT6
+    data
+<<eval=FALSE>>=
+lsat6AbilEAP <- fscores(lsat6Rasch, method = "EAP")
+@
+
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Weighted Likelihood Estimator}
+
+  \begin{itemize}
+  \item Like the MAP estimator, Warm's WLE maximizes a weighted likelihood
+    %
+    \begin{equation*}
+      P(X_{p\cdot} \mid \theta_p) h(\theta_p)
+    \end{equation*}
+
+  \item The function $h(\theta_p)$ is chosen to produce more accurate estimates
+    than the MLE for small sample sizes
+
+  \item The following estimates the item parameters using WLE for the LSAT6
+    data
+<<eval=FALSE>>=
+lsat6AbilWLE <- fscores(lsat6Rasch, method = "WLE")
+@
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Summarizing and Visualizing Ability Estimates}
+
+  \begin{itemize}
+  \item Ability estimates can be plotted and summarized using standard methods
+    for vectors and matrices
+  \item Some useful summary functions are \verb;mean;, \verb;sd;, \verb;median;,
+    \verb;quantile; and \verb;summary;
+  \item For example, we can compute the 5th and 95th quantiles as follows
+<<eval=FALSE>>=
+quantile(lsat6AbilWLE, c(.05, .95))
+@
+  \item We visualize the distribution of the abilities using a histogram:
+<<eval=FALSE>>=
+hist(lsat6AbilWLE, xlab = "Ability")
+@
+
+  \item This is useful for checking for multimodality, which could like to poor
+    estimates
+  \end{itemize}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,211 @@
+\documentclass{beamer}
+
+\usepackage{amsmath,amssymb,bm}
+
+% add frame numbers
+\beamertemplatenavigationsymbolsempty
+\setbeamertemplate{footline}[frame number]
+
+%% define a short hyphen which is not a minus sign
+\mathchardef\mhyphen="2D
+
+\title{Item Response Theory in R:\\Model Selection and Diagnostics}
+\author{Dr. Matthew Zeigenfuse}
+\institute{
+  Lehrstuhl f\"{u}r Psychologisches Methodenlehre, Evaluation und Statistik\\
+  Psychologisches Institut\\
+  Universit\"{a}t Z\"{u}rich%
+}
+\date{January 19, 2016}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\setkeys{Gin}{width=0.7\textwidth}
+
+<<preamble, echo=FALSE, results=hide>>=
+library(mirt)
+@
+
+\frame{\titlepage}
+
+%% --
+\begin{frame}
+  \frametitle{Introduction}
+
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Model Selection}
+
+  \begin{itemize}
+  \item A common strategy in IRT modeling is to fit multiple nested models
+    of increasing complexity and select the one providing the best fit to
+    estimate abilities
+  \item An example of nested models is the Rasch and 2PL models (the
+    Rasch model is nested in the 2PL)
+  \item The \verb;mirt; package provides an \verb;anova; method for
+    this purpose
+  \item The function takes two fitted models resulting from calls to the
+    \verb;mirt; function
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{anova} Example}
+
+<<results=hide>>=
+X <- expand.table(LSAT6)
+fitRM <- mirt(X, 1, "Rasch")
+fit2PL <- mirt(X, 1, "2PL")
+@
+<<>>=
+anova(fitRM, fit2PL)
+@
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Information Criteria}
+
+  \begin{itemize}
+  \item The AIC, AICc, SABIC and BIC report the AIC and BIC and their
+    sample-size corrected counterparts
+  \item These criteria can be used to compare nested models
+  \item They balance fit against model complexity by penalizing overall
+    fit by a function of the number of parameters
+  \item The function differs by criterion
+  \item In all cases, the model with the lowest score provides the best
+    balance of fit against complexity
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Likelihood Ratio Test}
+
+  \begin{itemize}
+  \item In addition to computing information criteria, the \verb;anova;
+    function also performs a likelihood ratio test (LRT)
+  \item LRTs test the null hypothesis that the simpler
+    model is sufficient to account for the data
+  \item It does so by comparing the fit of the simpler model to that
+    of a more complex model in which the simpler model is nested
+  \item For example, an LRT involving the Rasch and 2PL models tests the
+    null hypothesis that the Rasch model is sufficient to account for
+    the observed test responses by comparing its fit to that of the 2PL
+  \item A low $p$-value suggests that the simpler model (e.g., Rasch) does
+    not provide a good account of the data
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Test Fit}
+
+  \begin{itemize}
+  \item In addition to comparative measures of model fit, the \verb;mirt;
+    package also provides the M2 and $\text{M2}^\star$ statistics for
+    assessing the fit of an IRT model (Maydeu-Olivares \& Joe, 2006)
+  \item These statistics deal with the sparsity problems that can arise
+    when computing $G^2$ statistics
+  \item The M2 statistic is appropriate for dichotomous data and the
+    $\text{M2}^\star$ is appropriate for polytomous data
+  \item The \verb;M2; function computes the appropriate statistic
+  \item It also computes the RMSEA (along with its $90\%$ confidence
+    interval), the SRMSR and the TLI and CFI (if \verb;calcNull = TRUE;,
+    as it is by default)
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{M2} Example}
+
+<<>>=
+M2(fitRM)
+M2(fitRM, calcNull=FALSE)
+@
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Item Fit}
+
+  \begin{itemize}
+  \item \verb;mirt; can compute a number of item fit statistics
+    via the \verb;itemfit; function
+
+  \item By default, this function will compute
+    %
+    \begin{itemize}
+    \item $Z_h$ (Drasgow, Levine, \& Williams, 1985)
+    \item Infit, outfit and their $Z$-scores (Rasch model only)
+    \item $S \mhyphen X^2$ (Orlando \& Thissen, 2000)
+    \end{itemize}
+
+  \item It will also compute the $\chi^2$ statistic when \verb;X2 = TRUE;
+  \item These statistics are used to assess the degree to which the IRT
+    model captures the observed patterns of responses for an item
+  \item If ability estimates have already been computed, they can be
+    provided to \verb;itemfit; via the \verb;Theta; argument
+  \item Otherwise they will computed using \verb;fscores; with
+    \verb;method = "EAP";
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{itemfit} Example}
+
+<<>>=
+itemfit(fitRM)
+itemfit(fitRM, X2=TRUE)
+@
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{Person Fit}
+
+  \begin{itemize}
+  \item \verb;mirt; will also compute the $Z_h$ and the infit and outfit
+    statistics (Rasch model only) using the \verb;personfit; function
+  \item If ability estimates have already been computed, they can be
+    provided to \verb;itemfit; via the \verb;Theta; argument
+  \item Otherwise they will computed using \verb;fscores; with
+    \verb;method = "EAP";
+  \end{itemize}
+\end{frame}
+
+%% --
+\begin{frame}[fragile]
+  \frametitle{\texttt{personfit} Example}
+
+## <<>>=
+## abilRM <- fscores(fitRM, method="WLE")
+## head(personfit(fitRM, Theta=abilRM))
+@
+
+\end{frame}
+
+%% --
+\begin{frame}
+  \frametitle{Differential Item Functioning}
+
+  \begin{itemize}
+  \item Differential item function (DIF), or measurement bias, occurs
+    when people from different groups with the same ability have
+    different response probabilities for a test item
+  \item DIF items can impact the validity of a test, so it is a good
+    idea
+  \item DIF is typically subdivided into two types
+    %
+    \begin{itemize}
+    \item Uniform DIF:
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\end{document}

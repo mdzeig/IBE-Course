@@ -1,0 +1,15 @@
+library(eRm)
+
+set.seed(123456)
+
+threshRoot <- rnorm(17)
+threshMen <- c(threshRoot, .5, 1.1, 0)
+threshWomen <- c(threshRoot, -1.2, 0.57, -.26)
+X <- rbind(sim.rasch(500, threshMen), sim.rasch(500, threshWomen))
+itemNames <- paste0("Item_", 1:20)
+group <- rep(c('Men', 'Women'), each = 500)
+
+mgrm <- multipleGroup(X, 1, group, 
+                      c('free_means', 'free_var', 'slopes', itemNames[1:5]),
+                      itemtype = 'Rasch', SE = TRUE)
+unifDIF <- DIF(mgrm, which.par = 'd', items2test = 6:20, plotdif = TRUE)
